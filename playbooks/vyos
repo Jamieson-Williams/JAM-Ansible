@@ -1,0 +1,10 @@
+---
+- name: Test playbook
+  remote_user: vyos
+  hosts: host01
+  connection: ansible.netcommon.network_cli
+  tasks:
+    - name: Gather listed interfaces with provided configurations
+      vyos.vyos.vyos_interfaces:
+        config:
+        state: gathered
