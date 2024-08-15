@@ -1,0 +1,6 @@
+---
+# Main tasks to perform for routers.
+- name: Gather facts
+  vyos.vyos.vyos_facts:
+    gather_network_resources: all
+    gather_subset: all

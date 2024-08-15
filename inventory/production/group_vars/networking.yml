@@ -2,3 +2,4 @@
 # Variables for the networking group hosts. 
 ansible_network_os: vyos.vyos.vyos
 ansible_user: vyos
+ansible_connection: network_cli
