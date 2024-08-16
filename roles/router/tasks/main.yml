@@ -1,6 +1,18 @@
 ---
 # Main tasks to perform for routers.
-- name: Gather facts
-  vyos.vyos.vyos_facts:
-    gather_network_resources: all
-    gather_subset: all
+
+- name: Set Timezone
+  vyos.vyos.vyos_config:
+    lines:
+    - set system time-zone Australia/Melbourne
+
+- name: Configure WAN interface
+  vyos.vyos.vyos_config:
+    lines:
+    - set interfaces ethernet {{ wan_interface }} address dhcp
+    - set interfaces ethernet {{ wan_interface }} description WAN
+
+#- name: Gather facts
+#  vyos.vyos.vyos_facts:
+#    gather_network_resources: all
+#    gather_subset: all

@@ -5,3 +5,7 @@
   roles: 
     - common
     - router 
+
+  module_defaults:
+   vyos.vyos.vyos_config:
+    save: true
