@@ -12,6 +12,35 @@
     - set interfaces ethernet {{ wan_interface }} address dhcp
     - set interfaces ethernet {{ wan_interface }} description WAN
 
+- name: Configure LAN interface
+  vyos.vyos.vyos_config:
+    lines:
+    - set interfaces ethernet {{ lan_interface }} address 10.0.1.1/24
+    - set interfaces ethernet {{ lan_interface }} description LAN
+
+- name: Set NTP server
+  vyos.vyos.vyos_config:
+    lines:
+    - set service ntp server 0.au.pool.ntp.org
+
+- name: Configure name servers
+  vyos.vyos.vyos_system:
+    name_servers:
+    - 1.1.1.1
+    - 1.0.0.1 
+
+- name: Configure user SSH authentication
+  vyos.vyos.vyos_config:
+    lines:
+    - set system login user vyos authentication public-keys jamiesonwilliams4@gmail.com type ssh-ed25519
+    - set system login user vyos authentication public-keys jamiesonwilliams4@gmail.com key "{{ lookup('ansible.builtin.file', ssh_public_key_file) }}"
+    - set service ssh disable-password-authentication
+
+- name: Run jam_dhcp task
+  ansible.builtin.include_tasks:
+    file: prod_core_01.yml
+  when: inventory_hostname == "vyos01"
+  
 #- name: Gather facts
 #  vyos.vyos.vyos_facts:
 #    gather_network_resources: all

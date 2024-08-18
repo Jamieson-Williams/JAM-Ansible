@@ -1,0 +1,33 @@
+---
+# DHCP Server tasks for routers.
+
+- name: Set host and domain name
+  vyos.vyos.vyos_system:
+    host_name: vyos01
+    domain_name: jam.com.au
+
+- name: Set DHCP server settings
+  vyos.vyos.vyos_config:
+    lines:
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option default-router 10.0.1.1
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option name-server 10.0.1.1
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option domain-name jam.com.au
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option domain-search jam.com.au
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option time-zone Australia/Melbourne
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 lease 86400
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 range 0 start 10.0.1.2
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 range 0 stop 10.0.1.199
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 subnet-id 1
+
+- name: Set Outbound NAT rules 
+  vyos.vyos.vyos_config:
+    lines:
+    - set nat source rule 1 outbound-interface name eth1
+    - set nat source rule 1 source address 10.0.1.0/24
+    - set nat source rule 1 translation address masquerade
+
+- name: Set DNS forwarding
+  vyos.vyos.vyos_config:
+    lines:
+    - set service dns forwarding allow-from 10.0.1.0/24
+    - set service dns forwarding listen-address 10.0.1.1

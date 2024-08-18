@@ -3,3 +3,4 @@
 ansible_network_os: vyos.vyos.vyos
 ansible_user: vyos
 ansible_connection: network_cli
+ssh_public_key_file: "id_rsa.pub"
