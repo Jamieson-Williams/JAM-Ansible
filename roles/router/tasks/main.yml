@@ -12,12 +12,6 @@
     - set interfaces ethernet {{ wan_interface }} address dhcp
     - set interfaces ethernet {{ wan_interface }} description WAN
 
-- name: Configure LAN interface
-  vyos.vyos.vyos_config:
-    lines:
-    - set interfaces ethernet {{ lan_interface }} address 10.0.1.1/24
-    - set interfaces ethernet {{ lan_interface }} description LAN
-
 - name: Set NTP server
   vyos.vyos.vyos_config:
     lines:
