@@ -30,11 +30,14 @@
     - set system login user vyos authentication public-keys jamiesonwilliams4@gmail.com key "{{ lookup('ansible.builtin.file', ssh_public_key_file) }}"
     - set service ssh disable-password-authentication
 
-- name: Run jam_dhcp task
+- name: Run prod_core_01 task
   ansible.builtin.include_tasks:
     file: prod_core_01.yml
   when: inventory_hostname == "vyos01"
   
+- name: Run prod_core_vlan for vlan configuration
+  ansible.builtin.include_tasks:
+    file: prod_core_vlan.yml
 #- name: Gather facts
 #  vyos.vyos.vyos_facts:
 #    gather_network_resources: all

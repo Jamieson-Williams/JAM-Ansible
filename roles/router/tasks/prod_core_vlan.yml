@@ -1,0 +1,115 @@
+---
+# VLAN tasks to perform for routers
+
+- name: Create server vlan 
+  vyos.vyos.vyos_vlan:
+    vlan_id: 10
+    name: V10-Servers
+    interfaces: "{{ lan_interface }}"
+    address: 10.0.10.1/24
+    state: present
+
+- name: Create wifi vlan
+  vyos.vyos.vyos_vlan:
+    vlan_id: 20
+    name: V20-Wireless
+    interfaces: "{{ lan_interface }}"
+    address: 10.0.20.1/24
+    state: present
+
+- name: Create management vlan
+  vyos.vyos.vyos_vlan:
+    vlan_id: 80
+    name: V80-Management
+    interfaces: "{{ lan_interface }}"
+    address: 10.0.80.1/24
+    state: present
+
+- name: Configure IP addressing for all vlans
+  vyos.vyos.vyos_l3_interfaces:
+    config:
+    - name: "{{ lan_interface }}"
+      vifs:
+      - vlan_id: 10
+        ipv4:
+        - address: 10.0.10.1/24  
+      - vlan_id: 20
+        ipv4:
+        - address: 10.0.20.1/24
+      - vlan_id: 80
+        ipv4:
+        - address: 10.0.80.1/24
+
+- name: Configure DHCP for server vlan
+  vyos.vyos.vyos_config:
+    lines:
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option default-router 10.0.10.1
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option domain-name jam.com.au
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option domain-search jam.com.au
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option name-server 10.0.10.1
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 range 0 start 10.0.10.2
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 range 0 stop 10.0.10.199
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 subnet-id 2
+
+- name: Configure DNS fowarding for server vlan
+  vyos.vyos.vyos_config:
+    lines:
+    - set service dns forwarding dhcp "{{ lan_interface }}"
+    - set service dns forwarding listen-address 10.0.10.1
+
+- name: Configure NAT for server vlan
+  vyos.vyos.vyos_config:
+    lines:
+    - set nat source rule 10 outbound-interface name {{ wan_interface }}
+    - set nat source rule 10 source address 10.0.10.0/24
+    - set nat source rule 10 translation address masquerade
+
+- name: Configure DHCP for wireless vlan
+  vyos.vyos.vyos_config:
+    lines:
+    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option default-router 10.0.20.1
+    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option domain-name jam.com.au
+    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option domain-search jam.com.au
+    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option name-server 10.0.20.1
+    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 range 0 start 10.0.20.2
+    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 range 0 stop 10.0.20.199
+    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 subnet-id 3
+
+- name: Configure DNS forwarding for wireless vlan
+  vyos.vyos.vyos_config:
+    lines:
+    - set service dns forwarding dhcp "{{ lan_interface }}"
+    - set service dns forwarding listen-address 10.0.20.1
+
+- name: Configre NAT for wireless vlan
+  vyos.vyos.vyos_config:
+    lines:
+    - set nat source rule 20 outbound-interface name {{ wan_interface }}
+    - set nat source rule 20 source address 10.0.20.0/24
+    - set nat source rule 20 translation address masquerade
+
+- name: Configure DHCP for management vlan
+  vyos.vyos.vyos_config:
+    lines:
+    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option default-router 10.0.80.1
+    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option domain-name jam.com.au
+    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option domain-search jam.com.au
+    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option name-server 10.0.80.1
+    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 range 0 start 10.0.80.2
+    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 range 0 stop 10.0.80.199
+    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 subnet-id 4
+
+- name: Configure DNS forwarding for management vlan
+  vyos.vyos.vyos_config:
+    lines:
+    - set service dns forwarding dhcp "{{ wan_interface }}"
+    - set service dns forwarding listen-address 10.0.80.1
+
+- name: Configure NAT for management vlan
+  vyos.vyos.vyos_config:
+    lines:
+    - set nat source rule 80 outbound-interface name "{{ wan_interface }}"
+    - set nat source rule 80 source address 10.0.80.0/24
+    - set nat source rule 80 translation address masquerade
+
+  
