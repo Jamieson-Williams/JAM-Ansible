@@ -35,5 +35,6 @@
 - name: Set DNS forwarding
   vyos.vyos.vyos_config:
     lines:
-    - set service dns forwarding allow-from 10.0.1.0/24
+    - set service dns forwarding system
+    - set service dns forwarding allow-from 10.0.0.0/8
     - set service dns forwarding listen-address 10.0.1.1
