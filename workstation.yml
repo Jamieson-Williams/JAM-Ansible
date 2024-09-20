@@ -1,0 +1,8 @@
+--- 
+# workstation.yml defines configuration of workstation devices
+
+- name: Configure workstation devices
+  hosts: workstation-wsl
+  roles:
+  -  common
+  -  workstation

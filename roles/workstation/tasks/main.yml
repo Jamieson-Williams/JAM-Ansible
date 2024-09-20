@@ -1,0 +1,12 @@
+---
+# Main tasks to perform on workstations
+
+- name: Update apt cache
+  become: yes
+  apt:
+    update_cache: yes
+
+#- name: Enable WSL feature
+#  win_feature:
+#    name: Microsoft-Windows-Subsystem-Linux
+#    state: present

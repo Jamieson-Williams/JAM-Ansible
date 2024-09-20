@@ -1,5 +1,6 @@
 --- 
 # Configuration of the networking group. Map networking group to the roles performed by the group here
+
 - name: Configure networking devices
   hosts: networking
   roles: 

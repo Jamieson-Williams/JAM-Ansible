@@ -2,3 +2,4 @@
 # site.yml defines the entire infrastructure. Import other playbooks here
 
 - import_playbook: networking.yml
+- import_playbook: workstation.yml

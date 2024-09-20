@@ -1,0 +1,5 @@
+---
+# Variable file for all workstation-wsl hosts.
+
+ansible_user: jwilliams
+ansible_become_pass: '{{ vault_ansible_become_pass }}'
