@@ -30,7 +30,6 @@
   changed_when: current_git_user.stdout != git_user
   notify: "Set Global Git Username"
 
-#- name: Enable WSL feature
-#  win_feature:
-#    name: Microsoft-Windows-Subsystem-Linux
-#    state: present
+- name: Run terraform tasks
+  ansible.builtin.include_tasks:
+    file: terraform.yml
