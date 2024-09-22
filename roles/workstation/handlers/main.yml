@@ -1,0 +1,10 @@
+---
+# Handle changes when tasks fail in workstation playbooks
+
+- name: Set Global Git Email
+  ansible.builtin.command:
+    cmd: git config --global user.email "{{ git_email }}"
+
+- name: Set Global Git Username
+  ansible.builtin.command:
+    cmd: git config --global user.name "{{ git_user }}"

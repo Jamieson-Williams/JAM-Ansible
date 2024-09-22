@@ -6,6 +6,30 @@
   apt:
     update_cache: yes
 
+- name: Install Git if not present
+  become: yes
+  apt:
+    name: git
+    state: present
+
+- name: Load secured variables for Git Configuration
+  include_vars:
+    file: ~/JAM-Ansible/inventory/production/host_vars/desktop01/vault.yml
+
+- name: Check Global Git Email
+  ansible.builtin.shell:
+    cmd: git config --global user.email || echo "undefined"
+  register: current_git_email
+  changed_when: "current_git_email.stdout != git_email"
+  notify: "Set Global Git Email"
+
+- name: Check Global Git username
+  ansible.builtin.shell:
+    cmd: git config --global user.name || echo "undefined"
+  register: current_git_user
+  changed_when: current_git_user.stdout != git_user
+  notify: "Set Global Git Username"
+
 #- name: Enable WSL feature
 #  win_feature:
 #    name: Microsoft-Windows-Subsystem-Linux
