@@ -30,6 +30,12 @@
   changed_when: current_git_user.stdout != git_user
   notify: "Set Global Git Username"
 
+- name: Install whois package for Ubuntu
+  become: yes
+  ansible.builtin.apt:
+    name: whois
+    state: present
+
 - name: Run terraform tasks
   ansible.builtin.include_tasks:
     file: terraform.yml
