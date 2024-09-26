@@ -47,3 +47,17 @@
 - name: Show installed Terraform version
   debug:
     msg: "Terraform {{ terraform_version_check.stdout }} installed successfully."  
+
+- name: Install Packer
+  become: yes
+  apt:
+    name: packer
+    state: present
+
+- name: Verify Packer installation
+  command: packer --version
+  register: packer_version_check
+
+- name: Show installed Packer version
+  debug:
+    msg: "Packer {{ packer_version_check.stdout }} installed successfully."
