@@ -1,0 +1,8 @@
+---
+# Configuration of the server group. This playbook runs all server group tasks
+
+- name: Configure server
+  hosts: server
+  roles:
+   - common
+   - server

@@ -1,0 +1,4 @@
+---
+# Host specific variables for nas01 are defined here
+
+hostname: nas01

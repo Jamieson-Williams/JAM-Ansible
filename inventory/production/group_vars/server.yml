@@ -1,0 +1,4 @@
+---
+# Group variable file for servers
+
+ansible_user: ansible

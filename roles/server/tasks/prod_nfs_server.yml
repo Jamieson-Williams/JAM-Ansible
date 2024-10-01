@@ -1,0 +1,48 @@
+---
+# Tasks to install and configure NFS server
+
+- name: Update apt cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: yes
+    
+- name: Ensure NFS utilities are installed
+  become: true
+  ansible.builtin.apt:
+    name:
+    - nfs-common
+    - nfs-kernel-server
+    state: present
+
+- name: Create Export Directory for media service
+  become: true
+  ansible.builtin.file:
+    path: /srv/nfs/media
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure NFS exports
+  become: true
+  ansible.builtin.blockinfile:
+    path: /etc/exports
+    block: |
+      /srv/nfs/media 10.0.10.0/24(rw,sync,no_subtree_check)
+    state: present
+
+- name: Exporting Shared Directory
+  become: true
+  ansible.builtin.command:
+    cmd: exportfs -ra
+  when: 
+    ansible.builtin.stat:
+      path: /srv/nfs/media
+      exists: true
+
+- name: Ensure NFS server is running and enabled at boot
+  become: true
+  ansible.builtin.systemd:
+    name: nfs-kernel-server
+    enabled: yes
+    state: started

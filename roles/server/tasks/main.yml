@@ -1,0 +1,12 @@
+---
+# Main tasks to perform on servers
+
+- name: Set hostname
+  become: true
+  ansible.builtin.hostname:
+    name: "{{ hostname }}"
+
+- name: Run NFS Server tasks for NAS
+  ansible.builtin.include_tasks:
+    file: prod_nfs_server.yml
+  when: inventory_hostname == "nas01"
