@@ -31,14 +31,14 @@
       /srv/nfs/media 10.0.10.0/24(rw,sync,no_subtree_check)
     state: present
 
-- name: Exporting Shared Directory
+- name: Check if /srv/nfs/media is already exported
   become: true
-  ansible.builtin.command:
-    cmd: exportfs -ra
-  when: 
-    ansible.builtin.stat:
-      path: /srv/nfs/media
-      exists: true
+  ansible.builtin.shell:
+    cmd: exportfs -v | grep '/srv/nfs/media'
+  register: nfs_media_exported
+  changed_when: nfs_media_exported.stdout == ''
+  failed_when: false
+  notify: "Export Shared Directory"
 
 - name: Ensure NFS server is running and enabled at boot
   become: true

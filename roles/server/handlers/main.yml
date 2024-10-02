@@ -1,0 +1,7 @@
+---
+# Handle changes when tasks fail in server playbooks
+
+- name: Export Shared Directory
+  become: true
+  ansible.builtin.command:
+    cmd: exportfs -ra
