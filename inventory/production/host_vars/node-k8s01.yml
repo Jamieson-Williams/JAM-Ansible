@@ -1,0 +1,4 @@
+---
+# Host specific variables for Node-K8s-01 host defined here
+
+hostname: node-k8s01

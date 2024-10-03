@@ -1,0 +1,4 @@
+---
+# Host specific variables for Kubernetes Control host 1 defined here
+
+hostname: control-k8s01

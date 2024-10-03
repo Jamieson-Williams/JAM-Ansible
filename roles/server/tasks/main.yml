@@ -14,4 +14,4 @@
 - name: Run NFS Client tasks
   ansible.builtin.include_tasks:
     file: prod_nfs_client.yml
-  when: inventory_hostname == "k8s01"
+  when: inventory_hostname != "nas01"

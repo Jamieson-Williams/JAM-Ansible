@@ -1,4 +1,0 @@
----
-# Host specific variables for K8s-01 host defined here
-
-hostname: k8s01
