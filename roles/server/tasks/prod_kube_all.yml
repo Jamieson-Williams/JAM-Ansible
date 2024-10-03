@@ -1,0 +1,98 @@
+---
+# Tasks to install and initalise Kubernetes
+
+- name: Install required dependancies
+  become: true
+  ansible.builtin.apt:
+    name:
+     - apt-transport-https
+     - ca-certificates
+     - curl
+     - gnupg
+    state: present
+    update_cache: yes
+
+- name: Create keyring directory if it does not exist
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Check if Kubernetes keyring exists
+  ansible.builtin.stat:
+    path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  register: kubernetes_gpg_key
+
+- name: Download public signing key for Kubernetes package repositories
+  become: true
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  when: not kubernetes_gpg_key.stat.exists
+
+- name: Allow unprivileged APT programs to read kubernetes keyring
+  become: true
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    mode: '644'
+
+- name: Add kubernetes apt repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /'
+    state: present
+        
+- name: Set kubernetes.list permissions to help tools function correctly
+  become: true
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/pkgs_k8s_io_core_stable_v1_31_deb.list
+    mode: '644'
+
+- name: Update apt and install kubernetes packages
+  become: true
+  ansible.builtin.apt:
+    name:
+     - kubelet
+     - kubeadm
+     - kubectl
+    state: present
+    update_cache: yes
+
+- name: Ensure kubernetes services are started
+  become: true
+  ansible.builtin.service:
+    name: kubelet
+    enabled: true
+    state: started
+
+- name: Check if swap is enabled
+  become: true
+  ansible.builtin.command:
+    cmd: swapon --show
+  register: swap_status
+  changed_when: false
+
+- name: Disable swap if enabled
+  become: true
+  ansible.builtin.command:
+    cmd: swapoff -a
+  when: swap_status.stdout != ""
+
+- name: Remove any swap entry in /etc/fstab
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: \sswap\s
+    state: absent
+
+- name: Ensure bash completion is installed
+  become: true
+  ansible.builtin.apt:
+    name: bash-completion
+    state: present
+
+- name: Ensure kubectl autocompletion is enabled in main users ~/.bashrc
+  become: true
+  ansible.builtin.lineinfile:
+    path: "{{ user_home_dir }}/.bashrc"
+    line: 'source <(kubectl completion bash)'
+    state: present

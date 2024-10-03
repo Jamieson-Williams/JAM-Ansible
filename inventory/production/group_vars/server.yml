@@ -2,3 +2,4 @@
 # Group variable file for servers
 
 ansible_user: ansible
+user_home_dir: "/home/jwilliams"

@@ -6,12 +6,17 @@
   ansible.builtin.hostname:
     name: "{{ hostname }}"
 
-- name: Run NFS Server tasks for NAS
+- name: Run NFS Server tasks for NAS servers
   ansible.builtin.include_tasks:
     file: prod_nfs_server.yml
-  when: inventory_hostname == "nas01"
+  when: "'nas_server' in group_names"
 
-- name: Run NFS Client tasks
+- name: Run NFS Client tasks for non NAS servers
   ansible.builtin.include_tasks:
     file: prod_nfs_client.yml
-  when: inventory_hostname != "nas01"
+  when: "'nas_server' not in group_names"
+
+- name: Run Kubernetes tasks for kubernetes hosts
+  ansible.builtin.include_tasks:
+    file: prod_kube_all.yml
+  when: "'kube' in group_names"
