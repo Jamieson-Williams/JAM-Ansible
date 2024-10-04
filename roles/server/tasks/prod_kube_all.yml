@@ -29,6 +29,17 @@
     cmd: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
   when: not kubernetes_gpg_key.stat.exists
 
+- name: Check if CRI-O keyring exists
+  ansible.builtin.stat:
+    path: /etc/apt/keyrings/cri-o-apt-keyring.gpg
+  register: crio_gpg_key
+
+- name: Download CRI-O key if not exists in /etc/apt/keyrings
+  become: true
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
+  when: not crio_gpg_key.stat.exists
+
 - name: Allow unprivileged APT programs to read kubernetes keyring
   become: true
   ansible.builtin.file:
@@ -39,6 +50,14 @@
   become: true
   ansible.builtin.apt_repository:
     repo: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /'
+    filename: kubernetes
+    state: present
+
+- name: Add CRI-O apt repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: 'deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/v1.31/deb/ /'
+    filename: cri-o
     state: present
         
 - name: Set kubernetes.list permissions to help tools function correctly
@@ -54,6 +73,7 @@
      - kubelet
      - kubeadm
      - kubectl
+     - cri-o
     state: present
     update_cache: yes
 
@@ -61,6 +81,13 @@
   become: true
   ansible.builtin.service:
     name: kubelet
+    enabled: true
+    state: started
+
+- name: Ensure cri-o service is started
+  become: true
+  ansible.builtin.service:
+    name: crio
     enabled: true
     state: started
 
@@ -84,6 +111,36 @@
     regexp: \sswap\s
     state: absent
 
+- name: Check to see if br_netfilter module is loaded
+  become: true
+  ansible.builtin.shell:
+    cmd: 'lsmod | grep br_netfilter'
+  register: br_netfilter_check
+  changed_when: false
+  failed_when: false
+
+- name: Load br_netfilter kernel module if not currently loaded
+  become: true
+  ansible.builtin.shell:
+    cmd: modprobe br_netfilter
+  when: br_netfilter_check.stdout == ""
+
+- name: Ensure br_netfilter is loaded on boot
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/modules-load.d/k8s.conf
+    line: br_netfilter
+    create: true
+    state: present
+
+- name: Enable IPv4 forwarding for Kubernetes
+  become: true
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    reload: true
+
 - name: Ensure bash completion is installed
   become: true
   ansible.builtin.apt:
@@ -96,3 +153,38 @@
     path: "{{ user_home_dir }}/.bashrc"
     line: 'source <(kubectl completion bash)'
     state: present
+
+- name: Check if node is part of kubernetes cluster
+  become: true
+  ansible.builtin.shell:
+    cmd: "export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl get nodes --no-headers | grep -i {{ inventory_hostname }}"
+  register: node_in_cluster
+  changed_when: false
+  failed_when: false
+
+- name: Debug node_in_cluster result
+  ansible.builtin.debug:
+    var: node_in_cluster.stdout
+
+- name: Node status
+  ansible.builtin.debug:
+    msg: "Node {{ inventory_hostname }} is already part of the cluster."
+  when: node_in_cluster.stdout | length > 0
+
+#- name: Check if the cluster control plane exists
+#  ansible.builtin.shell:
+#    cmd: kubectl get nodes --no-headers
+#  register: control_plane_check
+#  changed_when: false
+#  failed_when: false
+#  when: node_in_cluster.stdout | length = 0 and inventory_hostname.startswith('control')
+#
+#- name: Display control plane status
+#  ansible.builtin.debug:
+#    msg: "Cluster exists. Joining node {{ inventory_hostname }} to the cluster."
+#  when: inventory_hostname.startswith('control') and control_plane_check.stdout | length > 0
+
+- name: Run kubernetes master tasks
+  ansible.builtin.include_tasks:
+    file: prod_kube_control_create.yml
+  when: "'kube' in group_names and inventory_hostname.startswith('control') and node_in_cluster.stdout | length == 0"
