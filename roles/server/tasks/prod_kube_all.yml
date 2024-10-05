@@ -154,37 +154,47 @@
     line: 'source <(kubectl completion bash)'
     state: present
 
-- name: Check if node is part of kubernetes cluster
+- name: Check if control node is part of kubernetes cluster
   become: true
   ansible.builtin.shell:
     cmd: "export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl get nodes --no-headers | grep -i {{ inventory_hostname }}"
   register: node_in_cluster
   changed_when: false
   failed_when: false
+  when: "'kube_control' in group_names"
 
-- name: Debug node_in_cluster result
-  ansible.builtin.debug:
-    var: node_in_cluster.stdout
+- name: Check if worker node is part of kubernetes cluster
+  become: true
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: worker_in_cluster
+  when: "'kube_node' in group_names"
 
-- name: Node status
-  ansible.builtin.debug:
-    msg: "Node {{ inventory_hostname }} is already part of the cluster."
-  when: node_in_cluster.stdout | length > 0
+- name: Build kubernetes join command
+  become: true
+  ansible.builtin.command:
+    cmd: sudo kubeadm token create --print-join-command
+  register: join_command
+  changed_when: false
+  when: "'control' in inventory_hostname"
 
-#- name: Check if the cluster control plane exists
-#  ansible.builtin.shell:
-#    cmd: kubectl get nodes --no-headers
-#  register: control_plane_check
-#  changed_when: false
-#  failed_when: false
-#  when: node_in_cluster.stdout | length = 0 and inventory_hostname.startswith('control')
-#
-#- name: Display control plane status
-#  ansible.builtin.debug:
-#    msg: "Cluster exists. Joining node {{ inventory_hostname }} to the cluster."
-#  when: inventory_hostname.startswith('control') and control_plane_check.stdout | length > 0
-
-- name: Run kubernetes master tasks
+- name: Run kubernetes create cluster tasks
   ansible.builtin.include_tasks:
     file: prod_kube_control_create.yml
-  when: "'kube' in group_names and inventory_hostname.startswith('control') and node_in_cluster.stdout | length == 0"
+  when: " node_in_cluster.stdout | length == 0 and 'control' in inventory_hostname"
+
+- name: Debug join_command result
+  ansible.builtin.debug:
+    var: join_command.stdout
+
+- name: Join worker nodes to kubernetes cluster
+  become: true
+  ansible.builtin.command:
+    cmd: sudo {{ hostvars[groups['kube_control'][0]]['join_command']['stdout'] }}
+  when: "'kube_node' in group_names and not worker_in_cluster.stat.exists"
+
+- name: Rename kubelet.conf file to admin.conf
+  become: true
+  ansible.builtin.command:
+    cmd: mv /etc/kubernetes/kubelet.conf /etc/kubernetes/admin.conf
+  when: "'kube_node' in group_names and not worker_in_cluster.stat.exists"

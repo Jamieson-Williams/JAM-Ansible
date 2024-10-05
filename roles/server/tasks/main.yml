@@ -19,4 +19,4 @@
 - name: Run Kubernetes tasks for kubernetes hosts
   ansible.builtin.include_tasks:
     file: prod_kube_all.yml
-  when: "'kube' in group_names"
+  when: group_names | select('search','kube') | list | count > 0
