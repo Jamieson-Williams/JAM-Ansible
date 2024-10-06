@@ -154,22 +154,6 @@
     line: 'source <(kubectl completion bash)'
     state: present
 
-- name: Check if control node is part of kubernetes cluster
-  become: true
-  ansible.builtin.shell:
-    cmd: "export KUBECONFIG=/etc/kubernetes/admin.conf; kubectl get nodes --no-headers | grep -i {{ inventory_hostname }}"
-  register: node_in_cluster
-  changed_when: false
-  failed_when: false
-  when: "'kube_control' in group_names"
-
-- name: Check if worker node is part of kubernetes cluster
-  become: true
-  ansible.builtin.stat:
-    path: /etc/kubernetes/admin.conf
-  register: worker_in_cluster
-  when: "'kube_node' in group_names"
-
 - name: Build kubernetes join command
   become: true
   ansible.builtin.command:
@@ -177,11 +161,6 @@
   register: join_command
   changed_when: false
   when: "'control' in inventory_hostname"
-
-- name: Run kubernetes create cluster tasks
-  ansible.builtin.include_tasks:
-    file: prod_kube_control_create.yml
-  when: " node_in_cluster.stdout | length == 0 and 'control' in inventory_hostname"
 
 - name: Debug join_command result
   ansible.builtin.debug:
@@ -193,8 +172,30 @@
     cmd: sudo {{ hostvars[groups['kube_control'][0]]['join_command']['stdout'] }}
   when: "'kube_node' in group_names and not worker_in_cluster.stat.exists"
 
-- name: Rename kubelet.conf file to admin.conf
+- name: Create ~/.kube directory for kubernetes and ansible user
   become: true
-  ansible.builtin.command:
-    cmd: mv /etc/kubernetes/kubelet.conf /etc/kubernetes/admin.conf
-  when: "'kube_node' in group_names and not worker_in_cluster.stat.exists"
+  ansible.builtin.file:
+    path: "{{ item.dir }}/.kube"
+    state: directory
+    mode: '0755'
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+  loop:
+    - { dir: '{{ kubernetes_admin_dir }}', name: '{{ kubernetes_admin_user }}' }
+    - { dir: '{{ kubernetes_ansible_dir }}', name: '{{ kubernetes_ansible_user }}' }
+
+- name: Run kubernetes control tasks
+  ansible.builtin.include_tasks:
+    file: prod_kube_control.yml
+  when: "'kube_control' in group_names"
+
+- name: Run kubernetes node tasks
+  ansible.builtin.include_tasks:
+    file: prod_kube_node.yml
+  when: "'kube_node' in group_names"
+
+- name: Install Calico for networking kubernetes cluster pods
+  become: true
+  ansible.builtin.shell: |
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/tigera-operator.yaml
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/custom-resources.yaml

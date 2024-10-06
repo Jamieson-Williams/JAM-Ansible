@@ -1,0 +1,31 @@
+---
+# Tasks to configure kubernetes cluster on worker nodes. This playbook should only run on worker nodes.
+
+- name: Check if worker node is part of kubernetes cluster
+  become: true
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: worker_in_cluster
+
+- name: Configure kubectl for cluster users
+  become: true
+  ansible.builtin.copy:
+    src: /etc/kubernetes/kubelet.conf
+    dest: "{{ item.dir }}/.kube/config"
+    remote_src: true
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: preserve
+  loop:
+    - { dir: '{{ kubernetes_admin_dir }}', name: '{{ kubernetes_admin_user }}' }
+    - { dir: '{{ kubernetes_ansible_dir }}', name: '{{ kubernetes_ansible_user }}' }
+
+- name: Add KUBECONFIG to env on kubernetes nodes
+  become: true
+  ansible.builtin.lineinfile:
+    path: "{{ item }}/.bashrc"
+    regexp: ^export KUBECONFIG
+    line: export KUBECONFIG=/etc/kubernetes/kubelet.conf
+  loop:
+    - "{{ kubernetes_admin_dir }}"
+    - "{{ kubernetes_ansible_dir }}"

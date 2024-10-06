@@ -1,0 +1,8 @@
+---
+# Configuration of the kubernetes server groups. This playbook runs all kubernetes tasks
+
+- name: Configure kubernetes control and worker nodes
+  hosts: kube_control:kube_node
+  roles:
+    - common
+    - kubernetes
