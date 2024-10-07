@@ -15,25 +15,28 @@
     cmd: kubeadm init --pod-network-cidr 10.244.0.0/16
   when: node_in_cluster is defined and node_in_cluster.stdout | length == 0
 
+- name: Configure kubectl for cluster administrator users
+  become: true
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/home/{{ item }}/.kube/config"
+    remote_src: true
+    owner: "{{ item }}"
+    group: "{{ item }}"
+    mode: preserve
+  loop:
+    - "{{ kubernetes_admin_user }}"
+    - "{{ kubernetes_ansible_user }}"
+
 - name: Add KUBECONFIG to env on kubernetes control
   become: true
   ansible.builtin.lineinfile:
     path: "{{ item }}/.bashrc"
     regexp: ^export KUBECONFIG
-    line: export KUBECONFIG=/etc/kubernetes/admin.conf
+    line: export KUBECONFIG="{{ item }}/.kube/config"
   loop:
     - "{{ kubernetes_admin_dir }}"
     - "{{ kubernetes_ansible_dir }}"
-
-- name: Configure kubectl for cluster administrator users
-  become: true
-  ansible.builtin.copy:
-    src: /etc/kubernetes/admin.conf
-    dest: "{{ kubernetes_admin_dir }}/.kube/config"
-    remote_src: true
-    owner: "{{ kubernetes_admin_user }}"
-    group: "{{ kubernetes_admin_user }}"
-    mode: preserve
 
 #- name: Configure kubectl for cluster administrator users
 #  become: yes

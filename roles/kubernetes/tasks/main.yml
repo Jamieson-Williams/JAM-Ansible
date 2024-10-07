@@ -166,6 +166,12 @@
   ansible.builtin.debug:
     var: join_command.stdout
 
+- name: Check if worker node is part of kubernetes cluster
+  become: true
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: worker_in_cluster
+
 - name: Join worker nodes to kubernetes cluster
   become: true
   ansible.builtin.command:
@@ -195,7 +201,5 @@
   when: "'kube_node' in group_names"
 
 - name: Install Calico for networking kubernetes cluster pods
-  become: true
   ansible.builtin.shell: |
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/tigera-operator.yaml
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/custom-resources.yaml
+    kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
