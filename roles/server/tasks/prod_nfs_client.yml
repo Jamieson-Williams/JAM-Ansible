@@ -14,14 +14,14 @@
   when: ansible_facts['os_family'] == "Debian"
 
 - name: Create the mount directory if it doesn't exist
-  become: yes
+  become: true
   ansible.builtin.file:
     path: /mnt/media
     state: directory
     mode: '0755'
 
 - name: Add NFS share to /etc/fstab for persistent mounting
-  become: yes
+  become: true
   ansible.builtin.mount:
     path: /mnt/media
     src: 10.0.10.84:/srv/nfs/media
