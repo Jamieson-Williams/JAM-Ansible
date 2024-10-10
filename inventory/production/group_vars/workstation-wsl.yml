@@ -3,3 +3,7 @@
 
 ansible_user: jwilliams
 ansible_become_pass: '{{ vault_ansible_become_pass }}'
+kubernetes_admin_dir: /home/jwilliams
+kubernetes_admin_user: jwilliams
+kubernetes_ansible_dir: /home/ansible
+kubernetes_ansible_user: ansible

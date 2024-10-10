@@ -1,0 +1,59 @@
+---
+# Tasks to install and configure kubectl on localhost
+
+- name: Ensure kubectl dependancies are installed
+  become: true
+  ansible.builtin.package:
+    name: snapd
+    state: present
+
+- name: Check if kubectl is installed
+  ansible.builtin.command: |
+    kubectl version --client
+  register: kubectl_check
+  changed_when: false
+  ignore_errors: true
+
+- name: Install kubectl via Snap
+  become: true
+  ansible.builtin.command: |
+    sudo snap install kubectl --classic
+  when: kubectl_check.rc != 0 
+
+- name: Create ~/.kube directory for kubernetes user
+  become: true
+  ansible.builtin.file:
+    path: "{{ kubernetes_admin_dir }}/.kube"
+    state: directory
+    mode: '0755'
+    owner: "{{ kubernetes_admin_user }}"
+    group: "{{ kubernetes_admin_user }}"
+
+- name: Fetch admin.conf from the kubernetes control plane node
+  become: true
+  remote_user: ansible
+  ansible.builtin.fetch:
+    src: "{{ kubernetes_admin_dir }}/.kube/config"
+    dest: "{{ kubernetes_admin_dir }}/.kube/config"
+    flat: yes
+  delegate_to: 10.0.10.2
+
+- name: Add KUBECONFIG to env on kubernetes nodes
+  become: true
+  ansible.builtin.lineinfile:
+    path: "{{ kubernetes_admin_dir }}/.bashrc"
+    regexp: ^export KUBECONFIG
+    line: export KUBECONFIG="{{ kubernetes_admin_dir }}/.kube/config"
+
+- name: Ensure bash completion is installed
+  become: true
+  ansible.builtin.apt:
+    name: bash-completion
+    state: present
+
+- name: Ensure kubectl autocompletion is enabled in main users ~/.bashrc
+  become: true
+  ansible.builtin.lineinfile:
+    path: "{{ kubernetes_admin_dir }}/.bashrc"
+    line: 'source <(kubectl completion bash)'
+    state: present

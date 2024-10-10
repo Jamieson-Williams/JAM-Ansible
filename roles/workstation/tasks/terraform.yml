@@ -2,7 +2,7 @@
 # Terraform tasks to perform on wsl workstations
 
 - name: Ensure prerequiste packages are installed and updated
-  become: yes
+  become: true
   apt:
     name:
     - gnupg
@@ -17,25 +17,25 @@
   register: hashicorp_gpg_key
 
 - name: Install HasiCorp GPG key
-  become: yes
+  become: true
   shell: wget -O- https://apt.releases.hashicorp.com/gpg | \
          gpg --dearmor | \
          sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
   when: not hashicorp_gpg_key.stat.exists
   
 - name: Install HashiCorp repo
-  become: yes
+  become: true
   apt_repository:
     repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_facts.distribution_release }} main"
     state: present
 
 - name: Update apt cache
-  become: yes
+  become: true
   apt:
     update_cache: yes
 
 - name: Install Terraform
-  become: yes
+  become: true
   apt:
     name: terraform
     state: present
@@ -49,7 +49,7 @@
     msg: "Terraform {{ terraform_version_check.stdout }} installed successfully."  
 
 - name: Install Packer
-  become: yes
+  become: true
   apt:
     name: packer
     state: present

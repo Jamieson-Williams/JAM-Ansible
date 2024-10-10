@@ -2,12 +2,12 @@
 # Main tasks to perform on workstations
 
 - name: Update apt cache
-  become: yes
+  become: true
   apt:
     update_cache: yes
 
 - name: Install Git if not present
-  become: yes
+  become: true
   apt:
     name: git
     state: present
@@ -31,7 +31,7 @@
   notify: "Set Global Git Username"
 
 - name: Install whois package for Ubuntu
-  become: yes
+  become: true
   ansible.builtin.apt:
     name: whois
     state: present
@@ -39,3 +39,7 @@
 - name: Run terraform tasks
   ansible.builtin.include_tasks:
     file: terraform.yml
+
+- name: Run kubernetes tasks
+  ansible.builtin.include_tasks:
+    file: kubernetes.yml
