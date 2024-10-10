@@ -38,9 +38,26 @@
     - "{{ kubernetes_admin_dir }}"
     - "{{ kubernetes_ansible_dir }}"
 
-#- name: Configure kubectl for cluster administrator users
-#  become: yes
-#  ansible.builtin.shell: |
-#    - mkdir -p {{ kubernetes_admin_dir }}/.kube
-#    - sudo cp -i /etc/kubernetes/admin.conf {{ kubernetes_admin_dir }}/.kube/config
-#    - sudo chown $(id -u {{ kubernetes_admin_user }}):(id -g {{ kubernetes_admin_user }}) {{ kubernetes_admin_dir }}/.kube/config
+- name: Check if Calico manifest has been applied already
+  ansible.builtin.shell: |
+    kubectl get pods -A | grep 'calico'
+  register: calico_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Install Calico for networking kubernetes cluster pods if not already applied
+  ansible.builtin.shell: |
+    kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
+  when: calico_check.rc != 0
+
+- name: Check control-plane taint is set to NoSchedule
+  ansible.builtin.shell: |
+    kubectl describe node {{ inventory_hostname }} | grep "node-role.kubernetes.io/control-plane:NoSchedule"
+  register: taint_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Ensure control node taint is set to NoSchedule
+  ansible.builtin.shell: |
+    kubectl taint nodes {{ inventory_hostname }} node-role.kubernetes.io/control-plane=:NoSchedule
+  when: taint_check.rc != 0

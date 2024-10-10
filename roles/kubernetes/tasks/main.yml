@@ -199,7 +199,3 @@
   ansible.builtin.include_tasks:
     file: prod_kube_node.yml
   when: "'kube_node' in group_names"
-
-- name: Install Calico for networking kubernetes cluster pods
-  ansible.builtin.shell: |
-    kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
