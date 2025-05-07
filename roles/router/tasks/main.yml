@@ -38,7 +38,7 @@
 - name: Run prod_core_vlan for vlan configuration
   ansible.builtin.include_tasks:
     file: prod_core_vlan.yml
-#- name: Gather facts
-#  vyos.vyos.vyos_facts:
-#    gather_network_resources: all
-#    gather_subset: all
+
+- name: Run prod_core_bgp for bgp configuration
+  ansible.builtin.include_tasks:
+    file: prod_core_bgp.yml
