@@ -1,0 +1,28 @@
+---
+# BGP tasks for peering with kubernetes cluster
+
+- name: Create BGP peering for kubernetes cluster
+  vyos.vyos.vyos_config:
+    lines:
+      # Set up the BGP peer group for Kubernetes (calico pods)
+      - set protocols bgp listen range 10.0.10.0/24 peer-group 'kubernetes'
+      - set protocols bgp peer-group kubernetes remote-as '64550'
+      - set protocols bgp peer-group kubernetes address-family ipv4-unicast
+
+      # Define the main interface and configure it as a BGP neighbour
+      - set protocols bgp neighbor "{{ lan_interface }}".10 address-family ipv4-unicast
+      - set protocols bgp neighbor "{{ lan_interface }}".10 interface remote-as external
+
+      # Set VyOS system BGP AS number
+      - set protocols bgp system-as '64512'
+
+      # Define prefix-list to prevent advertsing of the default route (0.0.0.0/0)
+      - set policy prefix-list DENY-DEFAULT rule 10 action deny
+      - set policy prefix-list DENY-DEFAULT rule 10 prefix 0.0.0.0/0
+
+      # Create a route-map to apply the prefix-list for advertisement rules
+      - set policy route-map RM-DENY-DEFAULT rule 10 action deny
+      - set policy route-map RM-DENY-DEFAULT rule 10 match ip address prefix-list DENY-DEFAULT
+
+      # Apply the route-map to the BGP peer group for Calico pods
+      - set protocols bgp peer-group kubernetes address-family ipv4-unicast route-map export RM-DENY-DEFAULT
