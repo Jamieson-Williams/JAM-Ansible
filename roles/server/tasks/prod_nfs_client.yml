@@ -16,15 +16,15 @@
 - name: Create the mount directory if it doesn't exist
   become: true
   ansible.builtin.file:
-    path: /mnt/media
+    path: /mnt/jellyfin
     state: directory
     mode: '0755'
 
 - name: Add NFS share to /etc/fstab for persistent mounting
   become: true
   ansible.builtin.mount:
-    path: /mnt/media
-    src: 10.0.10.84:/srv/nfs/media
+    path: /mnt/jellyfin
+    src: 10.0.10.84:/srv/nfs/jellyfin
     opts: rw,sync,hard,
     state: mounted
     fstype: nfs

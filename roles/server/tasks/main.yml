@@ -16,7 +16,7 @@
     file: prod_nfs_client.yml
   when: "'nas_server' not in group_names"
 
-- name: Run Kubernetes tasks for kubernetes hosts
-  ansible.builtin.include_tasks:
-    file: prod_kube_all.yml
-  when: group_names | select('search','kube') | list | count > 0
+#- name: Run Kubernetes tasks for kubernetes hosts
+#  ansible.builtin.include_tasks:
+#    file: prod_kube_all.yml
+#  when: group_names | select('search','kube') | list | count > 0

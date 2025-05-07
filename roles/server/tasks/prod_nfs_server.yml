@@ -17,7 +17,7 @@
 - name: Create Export Directory for media service
   become: true
   ansible.builtin.file:
-    path: /srv/nfs/media
+    path: /srv/nfs/jellyfin
     state: directory
     owner: root
     group: root
@@ -28,13 +28,13 @@
   ansible.builtin.blockinfile:
     path: /etc/exports
     block: |
-      /srv/nfs/media 10.0.10.0/24(rw,sync,no_subtree_check)
+      /srv/nfs/jellyfin 10.0.10.0/24(rw,sync,no_subtree_check)
     state: present
 
-- name: Check if /srv/nfs/media is already exported
+- name: Check if /srv/nfs/jellyfin is already exported
   become: true
   ansible.builtin.shell:
-    cmd: exportfs -v | grep '/srv/nfs/media'
+    cmd: exportfs -v | grep '/srv/nfs/jellyfin'
   register: nfs_media_exported
   changed_when: nfs_media_exported.stdout == ''
   failed_when: false
@@ -46,3 +46,17 @@
     name: nfs-kernel-server
     enabled: yes
     state: started
+
+- name: Create NFS directory structure for media service
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /srv/nfs/jellyfin/config/
+    - /srv/nfs/jellyfin/media/
+    - /srv/nfs/jellyfin/media/Movies/
+    - /srv/nfs/jellyfin/media/TVShows/
