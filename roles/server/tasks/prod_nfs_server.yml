@@ -52,8 +52,8 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: root
-    group: root
+    owner: jwilliams
+    group: jwilliams
     mode: '0755'
   loop:
     - /srv/nfs/jellyfin/config/
