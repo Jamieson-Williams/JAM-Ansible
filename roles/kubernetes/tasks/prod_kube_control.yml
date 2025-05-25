@@ -51,6 +51,18 @@
     kubectl apply -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
   when: calico_check.rc != 0
 
+- name: Check if MetalLB is already installed (namespace metallb-system exists)
+  ansible.builtin.shell: |
+    kubectl get ns metallb-system --no-headers
+  register: metallb_installed
+  ignore_errors: true
+  changed_when: false
+
+- name: Install MetalLB if not already installed
+  ansible.builtin.shell: |
+    kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
+  when: metallb_installed.rc !=0
+
 - name: Check control-plane taint is set to NoSchedule
   ansible.builtin.shell: |
     kubectl describe node {{ inventory_hostname }} | grep "node-role.kubernetes.io/control-plane:NoSchedule"
