@@ -63,6 +63,33 @@
     kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
   when: metallb_installed.rc !=0
 
+- name: Check if NGINX Ingress Controller is already installed
+  ansible.builtin.shell: |
+    kubectl get deployment ingress-nginx-controller -n ingress-nginx --no-headers
+  register: nginx_ingress_controller_installed
+  ignore_errors: true
+  changed_when: false
+
+- name: Install NGINX Ingress Controller if not already installed
+  ansible.builtin.shell: |
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.2/deploy/static/provider/baremetal/deploy.yaml
+  when: nginx_ingress_controller_installed.rc != 0
+
+- name: Check current type of ingress-nginx-controller service
+  ansible.builtin.shell: |
+    kubectl -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.spec.type}'
+  register: nginx_ingress_service_type
+  changed_when: false
+  failed_when: nginx_ingress_service_type.rc != 0
+
+- name: Patch ingress-nginx-controller to type LoadBalancer if not already
+  ansible.builtin.shell: |
+    kubectl -n ingress-nginx patch svc ingress-nginx-controller \
+    --type='json' \
+    -p='[{"op":"replace","path":"/spec/type","value":"LoadBalancer"}]'
+  when: nginx_ingress_service_type.stdout != "LoadBalancer"
+  register: nginx_ingress_patch_result
+
 - name: Check control-plane taint is set to NoSchedule
   ansible.builtin.shell: |
     kubectl describe node {{ inventory_hostname }} | grep "node-role.kubernetes.io/control-plane:NoSchedule"
