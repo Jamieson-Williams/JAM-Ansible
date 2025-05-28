@@ -38,3 +38,9 @@
     - set service dns forwarding system
     - set service dns forwarding allow-from 10.0.0.0/8
     - set service dns forwarding listen-address 10.0.1.1
+
+# Used for testing
+- name: Statically map IP to hostname for local name resolution
+  vyos.vyos.vyos_config:
+    lines:
+    - set system static-host-mapping host-name nginx.jam.com.au inet 10.200.0.6
