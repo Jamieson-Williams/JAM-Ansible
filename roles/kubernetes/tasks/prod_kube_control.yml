@@ -90,6 +90,26 @@
   when: nginx_ingress_service_type.stdout != "LoadBalancer"
   register: nginx_ingress_patch_result
 
+- name: Check if Cert-Manager is already installed
+  ansible.builtin.shell: |
+    kubectl get deployment cert-manager -n cert-manager --no-headers
+  register: cert_manager_installed
+  ignore_errors: true
+  changed_when: false
+
+- name: Install cert-manager if not already installed
+  ansible.builtin.shell: |
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.2/cert-manager.yaml
+  when: cert_manager_installed.rc != 0
+
+- name: Create Cloudflare API token secret in kubernetes
+  ansible.builtin.shell: |
+    kubectl create secret generic cloudflare-api-token-secret \
+      --from-literal=api-token={{ cloudflare_api_token }} \
+      --namespace cert-manager \
+      --dry-run=client -o yaml | kubectl apply -f -
+  no_log: true
+
 - name: Check control-plane taint is set to NoSchedule
   ansible.builtin.shell: |
     kubectl describe node {{ inventory_hostname }} | grep "node-role.kubernetes.io/control-plane:NoSchedule"
