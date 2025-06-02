@@ -1,0 +1,9 @@
+---
+# Group variable file for servers
+
+ansible_user: ansible
+user_home_dir: "/home/jwilliams"
+kubernetes_admin_user: jwilliams
+kubernetes_admin_dir: "/home/jwilliams"
+kubernetes_ansible_user: ansible
+kubernetes_ansible_dir: "/home/ansible"
