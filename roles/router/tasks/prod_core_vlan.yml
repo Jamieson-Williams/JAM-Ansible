@@ -47,7 +47,7 @@
     - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option domain-name jam.com.au
     - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option domain-search jam.com.au
     - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option name-server 10.0.10.1
-    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 range 0 start 10.0.10.2
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 range 0 start 10.0.10.10
     - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 range 0 stop 10.0.10.199
     - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 subnet-id 2
 
