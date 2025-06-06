@@ -1,6 +1,26 @@
 ---
 # Tasks to install and configure kubectl on localhost
 
+- name: Ensure pip is installed
+  become: true
+  ansible.builtin.package:
+    name: python3-pip
+    state: present
+
+#- name: Install Kubernetes Python dependencies
+#  become: true
+#  pip:
+#    name:
+#      - openshift
+#      - kubernetes
+#    state: present
+
+- name: Install kubernetes.core collection
+  become: true
+  ansible.builtin.command: ansible-galaxy collection install kubernetes.core
+  args:
+    creates: home/ansible/.ansible/collections/ansible_collections/kubernetes/core
+
 - name: Ensure kubectl dependancies are installed
   become: true
   ansible.builtin.package:
@@ -36,7 +56,7 @@
     src: "{{ kubernetes_admin_dir }}/.kube/config"
     dest: "{{ kubernetes_admin_dir }}/.kube/config"
     flat: yes
-  delegate_to: 10.0.10.2
+  delegate_to: control-k8s01
 
 - name: Add KUBECONFIG to env on kubernetes nodes
   become: true
@@ -57,3 +77,15 @@
     path: "{{ kubernetes_admin_dir }}/.bashrc"
     line: 'source <(kubectl completion bash)'
     state: present
+
+- name: Check if k9s installed via Homebrew
+  ansible.builtin.shell: |
+    brew list k9s
+  register: k9s_installed
+  changed_when: false
+  failed_when: false
+
+- name: Install k9s if not installed
+  ansible.builtin.shell: |
+    brew install k9s
+  when: k9s_installed.rc != 0

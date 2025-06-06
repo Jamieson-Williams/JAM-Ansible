@@ -36,6 +36,28 @@
     name: whois
     state: present
 
+- name: Check if Homebrew is installed
+  stat:
+    path: /home/linuxbrew/.linuxbrew/bin/brew
+  register: brew_stat
+
+- name: Install Homebrew
+  become: true
+  ansible.builtin.shell: |
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  when:
+    not brew_stat.stat.exists
+
+- name: Add Homebrew to PATH and shell env
+  become: true
+  ansible.builtin.shell: |
+    grep -qxF 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' /home/{{ item }}/.bashrc || \
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/{{ item }}/.bashrc
+  loop:
+    - jwilliams
+    - ansible
+  become_user: "{{ item }}"
+
 - name: Run terraform tasks
   ansible.builtin.include_tasks:
     file: terraform.yml
