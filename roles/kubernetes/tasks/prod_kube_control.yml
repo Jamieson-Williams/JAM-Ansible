@@ -15,6 +15,18 @@
     cmd: kubeadm init --pod-network-cidr 10.244.0.0/16
   when: node_in_cluster is defined and node_in_cluster.stdout | length == 0
 
+- name: Build kubernetes join command
+  become: true
+  ansible.builtin.command:
+    cmd: sudo kubeadm token create --print-join-command
+  register: join_command
+  changed_when: false
+  when: "'control' in inventory_hostname"
+
+- name: Debug join_command result
+  ansible.builtin.debug:
+    var: join_command.stdout
+
 - name: Configure kubectl for cluster administrator users
   become: true
   ansible.builtin.copy:
@@ -38,18 +50,62 @@
     - "{{ kubernetes_admin_dir }}"
     - "{{ kubernetes_ansible_dir }}"
 
-- name: Check if Calico manifest has been applied already
-  ansible.builtin.shell: |
-    kubectl get pods -A | grep 'calico'
-  register: calico_check
+- name: Check if helm is installed
+  ansible.builtin.command: helm version --short
+  register: helm_check
   ignore_errors: true
+
+- name: Install Helm if not installed
+  ansible.builtin.shell: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+  when: helm_check.failed
+
+- name: Generate Helm autocompletion for Bash
+  become: true
+  shell: |
+    helm completion bash > /etc/bash_completion.d/helm
+  args:
+    creates: /etc/bash_completion.d/helm
+
+- name: Check if Calico Helm repo is added
+  ansible.builtin.command: helm repo list
+  register: helm_repo_list
+  ignore_errors: true
+
+- name: Add Calico Helm repo if not present
+  ansible.builtin.shell: helm repo add projectcalico https://docs.tigera.io/calico/charts
+  when: "'projectcalico' not in helm_repo_list.stdout"
+
+- name: Update Helm repos
+  ansible.builtin.shell: helm repo update
+
+- name: Create namespace for Tigera Operator
+  vars: 
+    ansible_python_interpreter: /opt/k8s-venv/bin/python
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: tigera-operator
+    state: present
+
+- name: Check if Tigera Operator Helm release is installed
+  ansible.builtin.command: helm status calico -n tigera-operator
+  register: helm_release_check
+  failed_when: false
   changed_when: false
 
-- name: Install Calico for networking kubernetes cluster pods if not already applied
-  ansible.builtin.shell: |
-    kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
-    kubectl apply -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
-  when: calico_check.rc != 0
+- name: Install or upgrade Tigera Operator via Helm
+  ansible.builtin.shell: >
+    helm upgrade --install calico projectcalico/tigera-operator
+    --namespace tigera-operator
+    --version "v3.30.1"
+  when: helm_release_check.rc != 0
+  register: helm_install_result
+
+- name: Create install marker file
+  ansible.builtin.file:
+    path: /tmp/tigera_installed_marker
+    state: touch
+  when: helm_install_result is changed
 
 - name: Check if MetalLB is already installed (namespace metallb-system exists)
   ansible.builtin.shell: |

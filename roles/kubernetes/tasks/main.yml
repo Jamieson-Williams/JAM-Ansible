@@ -9,8 +9,26 @@
      - ca-certificates
      - curl
      - gnupg
+     - python3-pip
+     - python3-venv
     state: present
     update_cache: yes
+
+- name: Create a Python virtual environment
+  become: true
+  ansible.builtin.shell: |
+    python3 -m venv /opt/k8s-venv
+  args:
+    creates: /opt/k8s-venv/bin/activate
+
+- name: Install Kubernetes Python dependencies
+  become: true
+  ansible.builtin.pip:
+    name:
+      - kubernetes
+      - openshift
+    virtualenv: /opt/k8s-venv
+    virtualenv_python: python3
 
 - name: Create keyring directory if it does not exist
   ansible.builtin.file:
@@ -63,7 +81,7 @@
 - name: Set kubernetes.list permissions to help tools function correctly
   become: true
   ansible.builtin.file:
-    path: /etc/apt/sources.list.d/pkgs_k8s_io_core_stable_v1_31_deb.list
+    path: /etc/apt/sources.list.d/kubernetes.list
     mode: '644'
 
 - name: Update apt and install kubernetes packages
@@ -153,30 +171,6 @@
     path: "{{ user_home_dir }}/.bashrc"
     line: 'source <(kubectl completion bash)'
     state: present
-
-- name: Build kubernetes join command
-  become: true
-  ansible.builtin.command:
-    cmd: sudo kubeadm token create --print-join-command
-  register: join_command
-  changed_when: false
-  when: "'control' in inventory_hostname"
-
-- name: Debug join_command result
-  ansible.builtin.debug:
-    var: join_command.stdout
-
-- name: Check if worker node is part of kubernetes cluster
-  become: true
-  ansible.builtin.stat:
-    path: /etc/kubernetes/kubelet.conf
-  register: worker_in_cluster
-
-- name: Join worker nodes to kubernetes cluster
-  become: true
-  ansible.builtin.command:
-    cmd: sudo {{ hostvars[groups['kube_control'][0]]['join_command']['stdout'] }}
-  when: "'kube_node' in group_names and not worker_in_cluster.stat.exists"
 
 - name: Create ~/.kube directory for kubernetes and ansible user
   become: true

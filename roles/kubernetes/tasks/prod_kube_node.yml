@@ -1,6 +1,18 @@
 ---
 # Tasks to configure kubernetes cluster on worker nodes. This playbook should only run on worker nodes.
 
+- name: Check if worker node is part of kubernetes cluster
+  become: true
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: worker_in_cluster
+
+- name: Join worker nodes to kubernetes cluster
+  become: true
+  ansible.builtin.command:
+    cmd: sudo {{ hostvars[groups['kube_control'][0]]['join_command']['stdout'] }}
+  when: "'kube_node' in group_names and not worker_in_cluster.stat.exists"
+
 - name: Configure kubectl for cluster users
   become: true
   ansible.builtin.copy:
