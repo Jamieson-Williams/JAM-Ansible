@@ -50,13 +50,13 @@
 
 - name: Add Homebrew to PATH and shell env
   become: true
-  ansible.builtin.shell: |
-    grep -qxF 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' /home/{{ item }}/.bashrc || \
-    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/{{ item }}/.bashrc
+  ansible.builtin.lineinfile:
+    path: "{{ kubernetes_admin_dir }}/.bashrc"
+    line: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+    state: present
+    insertafter: EOF
   loop:
-    - jwilliams
-    - ansible
-  become_user: "{{ item }}"
+    - "{{ kubernetes_admin_user }}"
 
 - name: Run terraform tasks
   ansible.builtin.include_tasks:

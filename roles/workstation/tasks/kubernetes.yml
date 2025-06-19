@@ -3,17 +3,28 @@
 
 - name: Ensure pip is installed
   become: true
-  ansible.builtin.package:
-    name: python3-pip
+  ansible.builtin.apt:
+    name: 
+      - python3-pip
+      - python3-venv
     state: present
+    update_cache: true
 
-#- name: Install Kubernetes Python dependencies
-#  become: true
-#  pip:
-#    name:
-#      - openshift
-#      - kubernetes
-#    state: present
+- name: Create a Python virtual environment
+  become: true
+  ansible.builtin.shell: |
+    python3 -m venv /opt/k8s-venv
+  args:
+    creates: /opt/k8s-venv/bin/activate
+
+- name: Install Kubernetes Python dependencies
+  become: true
+  ansible.builtin.pip:
+    name:
+      - kubernetes
+      - openshift
+    virtualenv: /opt/k8s-venv
+    virtualenv_python: python3
 
 - name: Install kubernetes.core collection
   become: true
@@ -79,13 +90,82 @@
     state: present
 
 - name: Check if k9s installed via Homebrew
+  become_user: "{{ kubernetes_admin_user }}"
   ansible.builtin.shell: |
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
     brew list k9s
   register: k9s_installed
   changed_when: false
-  failed_when: false
+  ignore_errors: true
 
 - name: Install k9s if not installed
+  become_user: "{{ kubernetes_admin_user }}"
   ansible.builtin.shell: |
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
     brew install k9s
   when: k9s_installed.rc != 0
+
+- name: Check if helm is installed
+  become_user: "{{ kubernetes_admin_user }}"
+  ansible.builtin.command: helm version --short
+  register: helm_check
+  changed_when: false
+  ignore_errors: true
+
+- name: Install Helm if not installed
+  ansible.builtin.shell: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+  when: helm_check.failed
+
+- name: Generate Helm autocompletion for Bash
+  become: true
+  shell: |
+    helm completion bash > /etc/bash_completion.d/helm
+  args:
+    creates: /etc/bash_completion.d/helm
+
+- name: Check if Calico Helm repo is added
+  ansible.builtin.shell: |
+    helm repo list
+  register: helm_repo_list
+  ignore_errors: true
+
+- name: Show Helm repo list output
+  ansible.builtin.debug:
+    var: helm_repo_list.stdout
+
+- name: Add Calico Helm repo if not present
+  ansible.builtin.shell: helm repo add projectcalico https://docs.tigera.io/calico/charts
+  when: "'projectcalico' not in helm_repo_list.stdout"
+
+- name: Update Helm repos
+  ansible.builtin.shell: helm repo update
+  when: "'projectcalico' not in helm_repo_list.stdout"
+
+- name: Create namespace for Tigera Operator
+  vars: 
+    ansible_python_interpreter: /opt/k8s-venv/bin/python
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: tigera-operator
+    state: present
+
+- name: Check if Tigera Operator Helm release is installed
+  ansible.builtin.command: helm status calico -n tigera-operator
+  register: helm_release_check
+  failed_when: false
+  changed_when: false
+
+- name: Install or upgrade Tigera Operator via Helm
+  ansible.builtin.shell: >
+    helm upgrade --install calico projectcalico/tigera-operator
+    --namespace tigera-operator
+    --version "v3.30.1"
+  when: helm_release_check.rc != 0
+  register: helm_install_result
+
+- name: Create install marker file
+  ansible.builtin.file:
+    path: /tmp/tigera_installed_marker
+    state: touch
+  when: helm_install_result is changed
