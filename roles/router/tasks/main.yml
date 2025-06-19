@@ -42,3 +42,7 @@
 - name: Run prod_core_bgp for bgp configuration
   ansible.builtin.include_tasks:
     file: prod_core_bgp.yml
+
+- name: Run prod_core_firewall tasks
+  ansible.builtin.include_tasks:
+    file: prod_core_firewall.yml

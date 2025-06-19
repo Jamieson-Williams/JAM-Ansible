@@ -5,9 +5,9 @@
   vyos.vyos.vyos_config:
     lines:
       # Set up the BGP peer group for Kubernetes (calico pods)
-      #- set protocols bgp listen range 10.0.10.0/24 peer-group 'kubernetes'
-      #- set protocols bgp peer-group kubernetes remote-as '64550'
-      #- set protocols bgp peer-group kubernetes address-family ipv4-unicast
+      - set protocols bgp listen range 10.0.10.0/24 peer-group 'kubernetes'
+      - set protocols bgp peer-group kubernetes remote-as '64550'
+      - set protocols bgp peer-group kubernetes address-family ipv4-unicast
 
       # Define the main interface and configure it as a BGP neighbour
       - set protocols bgp neighbor "{{ lan_interface }}".10 address-family ipv4-unicast
@@ -25,27 +25,27 @@
       - set policy route-map RM-DENY-DEFAULT rule 10 match ip address prefix-list DENY-DEFAULT
 
       # Apply the route-map to the BGP peer group for Calico pods
-      #- set protocols bgp peer-group kubernetes address-family ipv4-unicast route-map export RM-DENY-DEFAULT
+      - set protocols bgp peer-group kubernetes address-family ipv4-unicast route-map export RM-DENY-DEFAULT
 
-- name: Create BGP peering for metalLB - kubernetes
-  vyos.vyos.vyos_config:
-    lines:
-      # Set up the BGP peer group for Kubernetes (metalLB pods)
-      - set protocols bgp peer-group metallb remote-as '64514'
-      - set protocols bgp peer-group metallb address-family ipv4-unicast
-
-      # Apply the route-map to the BGP peer group for Calico pods
-      - set protocols bgp peer-group metallb address-family ipv4-unicast route-map export RM-DENY-DEFAULT
-
-- name: Debug neighbour IP addresses
-  debug:
-    msg: "Neighbour {{ item }} IP is {{ hostvars[item]['ansible_host'] }}"
-  loop: "{{ groups['kube_node'] + groups['kube_control'] }}"
-
-- name: Add BGP peers for metalLB speakers
-  vyos.vyos.vyos_config:
-    lines:  
-      # Define the main interface and configure it as a BGP neighbour
-      - set protocols bgp neighbor {{ hostvars[item]['ansible_host'] }} peer-group metallb
-  loop: "{{ groups['kube_node'] + groups['kube_control'] }}"
+#- name: Create BGP peering for metalLB - kubernetes
+#  vyos.vyos.vyos_config:
+#    lines:
+#      # Set up the BGP peer group for Kubernetes (metalLB pods)
+#      - set protocols bgp peer-group metallb remote-as '64514'
+#      - set protocols bgp peer-group metallb address-family ipv4-unicast
+#
+#      # Apply the route-map to the BGP peer group for Calico pods
+#      - set protocols bgp peer-group metallb address-family ipv4-unicast route-map export RM-DENY-DEFAULT
+#
+#- name: Debug neighbour IP addresses
+#  debug:
+#    msg: "Neighbour {{ item }} IP is {{ hostvars[item]['ansible_host'] }}"
+#  loop: "{{ groups['kube_node'] + groups['kube_control'] }}"
+#
+#- name: Add BGP peers for metalLB speakers
+#  vyos.vyos.vyos_config:
+#    lines:  
+#      # Define the main interface and configure it as a BGP neighbour
+#      - set protocols bgp neighbor {{ hostvars[item]['ansible_host'] }} peer-group metallb
+#  loop: "{{ groups['kube_node'] + groups['kube_control'] }}"
     

@@ -1,0 +1,44 @@
+---
+- name: Set Firewall
+  vyos.vyos.vyos_config:
+    lines:
+      - set firewall ipv4 input filter default-action accept
+
+      #Create firewall group
+      - set firewall group network-group LAN network 10.0.1.0/24
+      - set firewall group network-group LAN network 10.0.10.0/24
+      - set firewall group network-group LAN network 10.0.20.0/24
+      - set firewall group network-group LAN network 10.0.80.0/24
+
+      #SSH
+      - set firewall ipv4 input filter rule 1 action accept
+      - set firewall ipv4 input filter rule 1 destination port 22
+      - set firewall ipv4 input filter rule 1 protocol tcp
+      - set firewall ipv4 input filter rule 1 source group network-group LAN
+
+      #DNS
+      - set firewall ipv4 input filter rule 2 action accept
+      - set firewall ipv4 input filter rule 2 destination port 53
+      - set firewall ipv4 input filter rule 2 protocol tcp_udp
+      - set firewall ipv4 input filter rule 2 source group network-group LAN
+
+      #SNMP
+      - set firewall ipv4 input filter rule 3 action accept
+      - set firewall ipv4 input filter rule 3 destination port 161
+      - set firewall ipv4 input filter rule 3 protocol udp
+      - set firewall ipv4 input filter rule 3 source group network-group LAN
+
+      #NTP
+      - set firewall ipv4 input filter rule 4 action accept
+      - set firewall ipv4 input filter rule 4 destination port 123
+      - set firewall ipv4 input filter rule 4 protocol udp
+      - set firewall ipv4 input filter rule 4 source group network-group LAN
+
+#- name: Set nginx service Port Forward
+#  vyos.vyos.vyos_config:
+#    lines:
+#      - set nat destination rule 201 description 'Forward HTTPS to Kubernetes nginx service'
+#      - set nat destination rule 201 inbound-interface name "{{ wan_interface }}"
+#      - set nat destination rule 201 protocol tcp_udp
+#      - set nat destination rule 201 destination port 443
+#      - set nat destination rule 201 translation address '10.200.0.5'

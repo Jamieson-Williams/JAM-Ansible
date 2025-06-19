@@ -44,8 +44,8 @@
   vyos.vyos.vyos_config:
     lines:
     - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option default-router 10.0.10.1
-    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option domain-name jam.com.au
-    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option domain-search jam.com.au
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option domain-name jamhub.au
+    - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option domain-search jamhub.au
     - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 option name-server 10.0.10.1
     - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 range 0 start 10.0.10.10
     - set service dhcp-server shared-network-name vlan-servers subnet 10.0.10.0/24 range 0 stop 10.0.10.199
@@ -68,8 +68,8 @@
   vyos.vyos.vyos_config:
     lines:
     - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option default-router 10.0.20.1
-    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option domain-name jam.com.au
-    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option domain-search jam.com.au
+    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option domain-name jamhub.au
+    - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option domain-search jamhub.au
     - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 option name-server 10.0.20.1
     - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 range 0 start 10.0.20.2
     - set service dhcp-server shared-network-name vlan-wireless subnet 10.0.20.0/24 range 0 stop 10.0.20.199
@@ -92,8 +92,8 @@
   vyos.vyos.vyos_config:
     lines:
     - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option default-router 10.0.80.1
-    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option domain-name jam.com.au
-    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option domain-search jam.com.au
+    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option domain-name jamhub.au
+    - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option domain-search jamhub.au
     - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 option name-server 10.0.80.1
     - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 range 0 start 10.0.80.2
     - set service dhcp-server shared-network-name vlan-management subnet 10.0.80.0/24 range 0 stop 10.0.80.199
@@ -112,4 +112,16 @@
     - set nat source rule 80 source address 10.0.80.0/24
     - set nat source rule 80 translation address masquerade
 
-  
+- name: Configure NAT for Kubernetes pod network
+  vyos.vyos.vyos_config:
+    lines:
+    - set nat source rule 200 outbound-interface name "{{ wan_interface }}"
+    - set nat source rule 200 source address 10.244.0.0/16
+    - set nat source rule 200 translation address masquerade
+
+- name: Configure NAT for Kubernetes service network
+  vyos.vyos.vyos_config:
+    lines:
+    - set nat source rule 96 outbound-interface name "{{ wan_interface }}"
+    - set nat source rule 96 source address 10.96.0.0/12
+    - set nat source rule 96 translation address masquerade

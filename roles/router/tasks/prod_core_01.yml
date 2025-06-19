@@ -4,7 +4,7 @@
 - name: Set host and domain name
   vyos.vyos.vyos_system:
     host_name: vyos01
-    domain_name: jam.com.au
+    domain_name: jamhub.au
 
 - name: Configure LAN interface
   vyos.vyos.vyos_config:
@@ -17,8 +17,8 @@
     lines:
     - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option default-router 10.0.1.1
     - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option name-server 10.0.1.1
-    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option domain-name jam.com.au
-    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option domain-search jam.com.au
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option domain-name jamhub.au
+    - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option domain-search jamhub.au
     - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 option time-zone Australia/Melbourne
     - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 lease 86400
     - set service dhcp-server shared-network-name LAN subnet 10.0.1.0/24 range 0 start 10.0.1.2
@@ -38,9 +38,11 @@
     - set service dns forwarding system
     - set service dns forwarding allow-from 10.0.0.0/8
     - set service dns forwarding listen-address 10.0.1.1
+    - set service dns forwarding domain jamhub.online name-server 10.96.0.10
+    - set service dns forwarding domain jamhub.online addnta
 
 # Used for testing
 - name: Statically map IP to hostname for local name resolution
   vyos.vyos.vyos_config:
     lines:
-    - set system static-host-mapping host-name nginx.jam.com.au inet 10.200.0.6
+    - set system static-host-mapping host-name jamhub.online inet 10.200.0.5
