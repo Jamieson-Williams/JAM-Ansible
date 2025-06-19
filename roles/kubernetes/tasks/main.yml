@@ -11,6 +11,7 @@
      - gnupg
      - python3-pip
      - python3-venv
+     - iptables-persistent
     state: present
     update_cache: yes
 
@@ -158,6 +159,26 @@
     value: '1'
     state: present
     reload: true
+
+- name: Ensure Masquerade rule on node for pod subnet
+  become: true
+  ansible.builtin.shell: |
+    iptables -t nat -C POSTROUTING -s 10.244.0.0/16 ! -d 10.244.0.0/16 -j MASQUERADE
+  register: masquerade_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Add Masquerade rule if not present
+  become: true
+  ansible.builtin.shell: |
+    iptables -t nat -A POSTROUTING -s 10.244.0.0/16 ! -d 10.244.0.0/16 -j MASQUERADE
+  when: masquerade_check.failed
+
+- name: Save iptables rules persistently
+  become: true
+  ansible.builtin.shell: |
+    iptables-save > /etc/iptables/rules.v4
+  when: masquerade_check.failed 
 
 - name: Ensure bash completion is installed
   become: true
